@@ -80,8 +80,8 @@ void ASpartaPlayerController::ShowMainMenu()
 			bShowMouseCursor = true;
 			SetInputMode(FInputModeUIOnly());
 		}
-
 	}
+
 }
 
 void ASpartaPlayerController::ShowGameOver()
@@ -116,6 +116,24 @@ void ASpartaPlayerController::ShowGameOver()
 		}
 
 	}
+
+	UFunction* PlayAnimFunc = GameOverWidgetInstance->FindFunction(FName("PlayGameOverAnim"));
+	if (PlayAnimFunc)
+	{
+		GameOverWidgetInstance->ProcessEvent(PlayAnimFunc, nullptr);
+	}
+
+	if (UTextBlock* TotalScoreText = Cast<UTextBlock>(GameOverWidgetInstance->GetWidgetFromName("TotalScoreText")))
+	{
+		if (USpartaGameInstance* SpartaGameInstance = Cast<USpartaGameInstance>(UGameplayStatics::GetGameInstance(this)))
+		{
+			TotalScoreText->SetText(FText::FromString(
+				FString::Printf(TEXT("Total Score : % d"), SpartaGameInstance->TotalScore)
+			));
+		}
+	}
+
+
 }
 
 void ASpartaPlayerController::ShowGameHUD()
@@ -166,4 +184,5 @@ void ASpartaPlayerController::StartGame()
 	}
 
 	UGameplayStatics::OpenLevel(GetWorld(), FName("BasicLevel"));
+	SetPause(false);
 }

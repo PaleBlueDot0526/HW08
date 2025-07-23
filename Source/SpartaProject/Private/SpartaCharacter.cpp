@@ -4,6 +4,9 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Components/WidgetComponent.h"
+#include "SpartaGameState.h"
+#include "Components/TextBlock.h"
 
 ASpartaCharacter::ASpartaCharacter()
 {
@@ -18,6 +21,10 @@ ASpartaCharacter::ASpartaCharacter()
 	CameraComp->SetupAttachment(SpringArmComp, USpringArmComponent::SocketName);
 	CameraComp->bUsePawnControlRotation = false;
 
+	OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
+	OverheadWidget->SetupAttachment(GetMesh());
+	OverheadWidget->SetWidgetSpace(EWidgetSpace::Screen);
+
 	NormalSpeed = 600.0f;
 	SprintSpeedMultiplier = 3.0f;
 	SprintSpeed = NormalSpeed * SprintSpeedMultiplier;
@@ -28,6 +35,13 @@ ASpartaCharacter::ASpartaCharacter()
 	MaxHealth = 100;
 	Health = MaxHealth;
 }
+
+void ASpartaCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+	UpdateOverheadHP();
+}
+
 
 void ASpartaCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
@@ -160,7 +174,8 @@ float ASpartaCharacter::GetHealth() const
 void ASpartaCharacter::AddHealth(float Amount)
 {
 	Health = FMath::Clamp(Health + Amount, 0.0f, MaxHealth);
-	UE_LOG(LogTemp, Warning, TEXT("Health increased to : %f"), Health);
+	UpdateOverheadHP();
+
 }
 
 float ASpartaCharacter::TakeDamage(
@@ -173,7 +188,7 @@ float ASpartaCharacter::TakeDamage(
 	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
 	Health = FMath::Clamp(Health - DamageAmount, 0.0f, MaxHealth);
-	UE_LOG(LogTemp, Warning, TEXT("Health decreased to : %f"), Health);
+	UpdateOverheadHP();
 
 	if (Health <= 0.0f)
 	{
@@ -185,5 +200,22 @@ float ASpartaCharacter::TakeDamage(
 
 void ASpartaCharacter::OnDeath()
 {
+	ASpartaGameState* SpartaGameState = GetWorld() ? GetWorld()->GetGameState<ASpartaGameState>() : nullptr;
+	if (SpartaGameState)
+	{
+		SpartaGameState->OnGameOver();
+	}
+}
 
+void ASpartaCharacter::UpdateOverheadHP()
+{
+	if (!OverheadWidget) return;
+
+	UUserWidget* OverheadWidgetInstance = OverheadWidget->GetUserWidgetObject();
+	if (!OverheadWidgetInstance) return;
+
+	if (UTextBlock* HPText = Cast<UTextBlock>(OverheadWidgetInstance->GetWidgetFromName("OverHeadHP")))
+	{
+		HPText->SetText(FText::FromString(FString::Printf(TEXT("%.0f / %.0f"), Health, MaxHealth)));
+	}
 }

@@ -159,6 +159,7 @@ void ASpartaGameState::OnGameOver()
 	{
 		if (ASpartaPlayerController* SpartaPlayerController = Cast<ASpartaPlayerController>(PlayerController))
 		{
+			SpartaPlayerController->SetPause(true);
 			SpartaPlayerController->ShowGameOver();
 		}
 	}
